@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Expense Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #0369a1 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #f8fafc;
+        }
+        .glass-input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+            outline: none;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.4);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.7);
+        }
+    </style>
+</head>
+<body class="font-sans antialiased pb-12">
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <header class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 pb-6 border-b border-sky-900/50 gap-4">
+            <div>
+                <div class="flex items-center space-x-3">
+                    <div class="p-2.5 bg-sky-500/20 text-sky-400 rounded-xl border border-sky-500/30">
+                        <i class="fa-solid fa-wallet text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-white">Expense Tracker</h1>
+                        <p class="text-sky-200/70 text-sm">Track, manage, and optimize your daily expenditures</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Auth & Database connection status indicator -->
+            <div id="authStatus" class="flex items-center gap-2 text-xs text-slate-300 bg-slate-900/80 px-3.5 py-1.5 rounded-full border border-slate-700 self-start md:self-auto">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" id="statusIndicator"></span>
+                <span id="statusText">Initializing Authentication...</span>
+            </div>
+        </header>
+
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+            <!-- Total Amount Spent -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all"></div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-slate-300 text-sm font-medium">Total Amount Spent</span>
+                    <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                        <i class="fa-solid fa-dollar-sign text-lg"></i>
+                    </div>
+                </div>
+                <div class="text-3xl font-extrabold text-white tracking-tight" id="totalAmountSpent">$0.00</div>
+                <p class="text-slate-400 text-xs mt-2">Calculated from all recorded expenses</p>
+            </div>
+
+            <!-- Total Expenses Count -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-sky-500/10 rounded-full blur-xl group-hover:bg-sky-500/20 transition-all"></div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-slate-300 text-sm font-medium">Total Expenses</span>
+                    <div class="p-2 bg-sky-500/10 text-sky-400 rounded-lg">
+                        <i class="fa-solid fa-receipt text-lg"></i>
+                    </div>
+                </div>
+                <div class="text-3xl font-extrabold text-white tracking-tight" id="totalExpensesCount">0</div>
+                <p class="text-slate-400 text-xs mt-2" id="countSubtext">0 expenses registered</p>
+            </div>
+
+            <!-- Average Per Expense -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl relative overflow-hidden group sm:col-span-2 lg:col-span-1">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl group-hover:bg-indigo-500/20 transition-all"></div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-slate-300 text-sm font-medium">Average Expense</span>
+                    <div class="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg">
+                        <i class="fa-solid fa-chart-line text-lg"></i>
+                    </div>
+                </div>
+                <div class="text-3xl font-extrabold text-white tracking-tight" id="avgExpenseAmount">$0.00</div>
+                <p class="text-slate-400 text-xs mt-2">Average spend per transaction</p>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Add Expense Form Panel -->
+            <div class="lg:col-span-4">
+                <div class="glass-card rounded-2xl p-6 shadow-xl sticky top-6">
+                    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-plus text-sky-400"></i>
+                        Add New Expense
+                    </h2>
+
+                    <div id="formAlert" class="hidden mb-4 p-3 rounded-xl text-sm border"></div>
+
+                    <form id="expenseForm" class="space-y-4">
+                        <!-- Title Field -->
+                        <div>
+                            <label for="expenseTitle" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                                Expense Title <span class="text-rose-400">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="expenseTitle" 
+                                placeholder="e.g. Grocery Store, Taxi Fare" 
+                                required
+                                class="w-full glass-input rounded-xl px-3.5 py-2.5 text-sm transition-all placeholder:text-slate-500"
+                            >
+                        </div>
+
+                        <!-- Amount Field -->
+                        <div>
+                            <label for="expenseAmount" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                                Amount ($) <span class="text-rose-400">*</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-3.5 top-2.5 text-slate-400 text-sm">$</span>
+                                <input 
+                                    type="number" 
+                                    id="expenseAmount" 
+                                    step="0.01" 
+                                    min="0.01" 
+                                    placeholder="0.00" 
+                                    required
+                                    class="w-full glass-input rounded-xl pl-8 pr-3.5 py-2.5 text-sm transition-all placeholder:text-slate-500"
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Category Dropdown -->
+                        <div>
+                            <label for="expenseCategory" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                                Category <span class="text-rose-400">*</span>
+                            </label>
+                            <select 
+                                id="expenseCategory" 
+                                required
+                                class="w-full glass-input rounded-xl px-3.5 py-2.5 text-sm transition-all text-slate-200 cursor-pointer"
+                            >
+                                <option value="" disabled selected class="bg-slate-900 text-slate-400">Select Category</option>
+                                <option value="Food" class="bg-slate-900 text-white">🍔 Food</option>
+                                <option value="Travel" class="bg-slate-900 text-white">✈️ Travel</option>
+                                <option value="Shopping" class="bg-slate-900 text-white">🛍️ Shopping</option>
+                                <option value="Bills" class="bg-slate-900 text-white">💡 Bills</option>
+                                <option value="Other" class="bg-slate-900 text-white">📦 Other</option>
+                            </select>
+                        </div>
+
+                        <!-- Date Picker -->
+                        <div>
+                            <label for="expenseDate" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                                Date <span class="text-rose-400">*</span>
+                            </label>
+                            <input 
+                                type="date" 
+                                id="expenseDate" 
+                                required
+                                class="w-full glass-input rounded-xl px-3.5 py-2.5 text-sm transition-all text-slate-200"
+                            >
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button 
+                            type="submit" 
+                            id="submitBtn"
+                            disabled
+                            class="w-full mt-2 py-3 px-4 bg-sky-600 hover:bg-sky-500 active:scale-[0.98] text-white font-semibold rounded-xl shadow-lg shadow-sky-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Add Expense</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Expense Records Table -->
+            <div class="lg:col-span-8 space-y-4">
+                <div class="glass-card rounded-2xl p-6 shadow-xl">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-list-ul text-sky-400"></i>
+                            Expense Records
+                        </h2>
+
+                        <!-- Category Filter Buttons -->
+                        <div class="flex flex-wrap gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-800" id="filterContainer">
+                            <button data-filter="All" class="filter-btn px-3 py-1 text-xs font-medium rounded-lg bg-sky-600 text-white transition-all">All</button>
+                            <button data-filter="Food" class="filter-btn px-3 py-1 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all">Food</button>
+                            <button data-filter="Travel" class="filter-btn px-3 py-1 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all">Travel</button>
+                            <button data-filter="Shopping" class="filter-btn px-3 py-1 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all">Shopping</button>
+                            <button data-filter="Bills" class="filter-btn px-3 py-1 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all">Bills</button>
+                            <button data-filter="Other" class="filter-btn px-3 py-1 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all">Other</button>
+                        </div>
+                    </div>
+
+                    <!-- Responsive Table -->
+                    <div class="overflow-x-auto rounded-xl border border-slate-800">
+                        <table class="w-full text-left text-sm text-slate-300">
+                            <thead class="bg-slate-900/90 text-xs font-semibold uppercase text-slate-400 border-b border-slate-800">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3.5">Title</th>
+                                    <th scope="col" class="px-4 py-3.5">Category</th>
+                                    <th scope="col" class="px-4 py-3.5">Date</th>
+                                    <th scope="col" class="px-4 py-3.5 text-right">Amount</th>
+                                    <th scope="col" class="px-4 py-3.5 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenseTableBody" class="divide-y divide-slate-800/60">
+                                <tr>
+                                    <td colspan="5" class="text-center py-12 text-slate-400">
+                                        <i class="fa-solid fa-circle-notch fa-spin text-2xl text-sky-400 mb-2"></i>
+                                        <p>Connecting to database session...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-card rounded-2xl p-6 max-w-sm w-full border border-slate-800 shadow-2xl space-y-4">
+            <div class="flex items-center gap-3 text-rose-400">
+                <div class="p-2.5 bg-rose-500/10 rounded-xl border border-rose-500/20">
+                    <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white">Confirm Delete</h3>
+            </div>
+            <p class="text-slate-300 text-sm">Are you sure you want to delete this expense record? This action cannot be undone.</p>
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button id="cancelDeleteBtn" class="px-4 py-2 text-sm font-medium rounded-xl text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 transition-all">Cancel</button>
+                <button id="confirmDeleteBtn" class="px-4 py-2 text-sm font-medium rounded-xl text-white bg-rose-600 hover:bg-rose-500 transition-all shadow-lg shadow-rose-600/30">Delete Record</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Global Firebase Configuration Setup
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'expense-tracker-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                apiKey: "demo-api-key",
+                authDomain: "demo-app.firebaseapp.com",
+                projectId: "demo-app",
+                storageBucket: "demo-app.appspot.com",
+                messagingSenderId: "123456789",
+                appId: "1:123456789:web:demo"
+            };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // UI Element References
+        const form = document.getElementById('expenseForm');
+        const titleInput = document.getElementById('expenseTitle');
+        const amountInput = document.getElementById('expenseAmount');
+        const categoryInput = document.getElementById('expenseCategory');
+        const dateInput = document.getElementById('expenseDate');
+        const submitBtn = document.getElementById('submitBtn');
+        const tableBody = document.getElementById('expenseTableBody');
+        const alertBox = document.getElementById('formAlert');
+        const filterContainer = document.getElementById('filterContainer');
+
+        const totalAmountSpentEl = document.getElementById('totalAmountSpent');
+        const totalExpensesCountEl = document.getElementById('totalExpensesCount');
+        const avgExpenseAmountEl = document.getElementById('avgExpenseAmount');
+        const countSubtextEl = document.getElementById('countSubtext');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+
+        const deleteModal = document.getElementById('deleteModal');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+
+        // Application State
+        let currentUser = null;
+        let unsubscribeListener = null;
+        let allExpenses = [];
+        let currentFilter = 'All';
+        let pendingDeleteId = null;
+
+        // Set Default Date to Today
+        dateInput.value = new Date().toISOString().split('T')[0];
+
+        async function initializeAuthentication() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.warn("Primary authentication token failed, falling back to anonymous auth:", err);
+                try {
+                    await signInAnonymously(auth);
+                } catch (fallbackErr) {
+                    console.error("Anonymous authentication failed completely:", fallbackErr);
+                    statusIndicator.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+                    statusText.textContent = "Database Connection Failed";
+                    showFormAlert("Could not establish authenticated session with database.", "error");
+                }
+            }
+        }
+
+        // Listen for Authentication state resolution BEFORE performing database ops
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                statusIndicator.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+                statusText.textContent = "Database Connected";
+                submitBtn.disabled = false;
+                
+                // Bind real-time snapshot listener
+                subscribeToExpenses();
+            } else {
+                currentUser = null;
+                submitBtn.disabled = true;
+                statusIndicator.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse";
+                statusText.textContent = "Authenticating...";
+            }
+        });
+
+        function subscribeToExpenses() {
+            if (!currentUser) return;
+            if (unsubscribeListener) unsubscribeListener();
+
+            // Firestore Path standard: /artifacts/{appId}/public/data/{collectionName}
+            const expensesRef = collection(db, 'artifacts', appId, 'public', 'data', 'expenses');
+
+            unsubscribeListener = onSnapshot(expensesRef, 
+                (snapshot) => {
+                    allExpenses = [];
+                    snapshot.forEach((docSnapshot) => {
+                        allExpenses.push({
+                            id: docSnapshot.id,
+                            ...docSnapshot.data()
+                        });
+                    });
+
+                    // Sort expenses descending by date
+                    allExpenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                    updateStats();
+                    renderTable();
+                },
+                (error) => {
+                    console.error("Firestore Snapshot Error:", error);
+                    showFormAlert("Real-time synchronization encountered an issue.", "error");
+                }
+            );
+        }
+
+        const categoryBadgeStyles = {
+            Food: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+            Travel: "bg-sky-500/10 text-sky-400 border-sky-500/20",
+            Shopping: "bg-pink-500/10 text-pink-400 border-pink-500/20",
+            Bills: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
+            Other: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+        };
+
+        const categoryIcons = {
+            Food: "🍔",
+            Travel: "✈️",
+            Shopping: "🛍️",
+            Bills: "💡",
+            Other: "📦"
+        };
+
+        function updateStats() {
+            const count = allExpenses.length;
+            const totalSpent = allExpenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+            const avgSpent = count > 0 ? (totalSpent / count) : 0;
+
+            totalExpensesCountEl.textContent = count;
+            totalAmountSpentEl.textContent = `$${totalSpent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            avgExpenseAmountEl.textContent = `$${avgSpent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            countSubtextEl.textContent = `${count} ${count === 1 ? 'expense' : 'expenses'} registered`;
+        }
+
+        function renderTable() {
+            const filteredExpenses = currentFilter === 'All' 
+                ? allExpenses 
+                : allExpenses.filter(item => item.category === currentFilter);
+
+            if (filteredExpenses.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-12 text-slate-500">
+                            <i class="fa-regular fa-folder-open text-3xl mb-3 block opacity-40"></i>
+                            <p class="font-medium text-slate-400">No expenses found</p>
+                            <p class="text-xs text-slate-500 mt-1">${currentFilter === 'All' ? 'Start by adding a new expense record.' : `No items registered under "${currentFilter}" category.`}</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tableBody.innerHTML = filteredExpenses.map(expense => {
+                const badgeClass = categoryBadgeStyles[expense.category] || categoryBadgeStyles.Other;
+                const icon = categoryIcons[expense.category] || "📦";
+                const formattedAmount = Number(expense.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                
+                let formattedDate = expense.date;
+                try {
+                    const dateParts = expense.date.split('-');
+                    if (dateParts.length === 3) {
+                        const d = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+                        formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    }
+                } catch(e) {}
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="px-4 py-3.5 font-medium text-white flex items-center gap-2">
+                            <span class="truncate max-w-[180px] sm:max-w-xs" title="${escapeHtml(expense.title)}">${escapeHtml(expense.title)}</span>
+                        </td>
+                        <td class="px-4 py-3.5">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg border ${badgeClass}">
+                                <span>${icon}</span>
+                                <span>${expense.category}</span>
+                            </span>
+                        </td>
+                        <td class="px-4 py-3.5 text-xs text-slate-400 whitespace-nowrap">
+                            ${formattedDate}
+                        </td>
+                        <td class="px-4 py-3.5 text-right font-semibold text-white whitespace-nowrap">
+                            $${formattedAmount}
+                        </td>
+                        <td class="px-4 py-3.5 text-center whitespace-nowrap">
+                            <button 
+                                data-id="${expense.id}" 
+                                class="delete-btn p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer"
+                                title="Delete expense"
+                            >
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function showFormAlert(message, type = "success") {
+            alertBox.classList.remove('hidden', 'bg-emerald-500/10', 'border-emerald-500/30', 'text-emerald-400', 'bg-rose-500/10', 'border-rose-500/30', 'text-rose-400');
+            
+            if (type === "success") {
+                alertBox.classList.add('bg-emerald-500/10', 'border-emerald-500/30', 'text-emerald-400');
+            } else {
+                alertBox.classList.add('bg-rose-500/10', 'border-rose-500/30', 'text-rose-400');
+            }
+            
+            alertBox.textContent = message;
+            setTimeout(() => {
+                alertBox.classList.add('hidden');
+            }, 4000);
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!currentUser) {
+                showFormAlert("Database authentication is still in progress. Please wait...", "error");
+                return;
+            }
+
+            const title = titleInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+            const category = categoryInput.value;
+            const date = dateInput.value;
+
+            if (!title) {
+                showFormAlert("Please provide a valid title.", "error");
+                return;
+            }
+            if (isNaN(amount) || amount <= 0) {
+                showFormAlert("Please enter an amount greater than zero.", "error");
+                return;
+            }
+            if (!category) {
+                showFormAlert("Please select a category.", "error");
+                return;
+            }
+            if (!date) {
+                showFormAlert("Please select a valid date.", "error");
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Saving...</span>`;
+
+            try {
+                const expensesRef = collection(db, 'artifacts', appId, 'public', 'data', 'expenses');
+                await addDoc(expensesRef, {
+                    title: title,
+                    amount: amount,
+                    category: category,
+                    date: date,
+                    createdAt: new Date().toISOString()
+                });
+
+                titleInput.value = '';
+                amountInput.value = '';
+                categoryInput.value = '';
+                dateInput.value = new Date().toISOString().split('T')[0];
+
+                showFormAlert("Expense added successfully!", "success");
+            } catch (error) {
+                console.error("Error adding expense:", error);
+                showFormAlert("Failed to save expense record.", "error");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<i class="fa-solid fa-plus"></i> <span>Add Expense</span>`;
+            }
+        });
+
+        // Filter Category Buttons Event Listener
+        filterContainer.addEventListener('click', (e) => {
+            const filterBtn = e.target.closest('.filter-btn');
+            if (!filterBtn) return;
+
+            const categoryFilter = filterBtn.getAttribute('data-filter');
+            currentFilter = categoryFilter;
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.getAttribute('data-filter') === categoryFilter) {
+                    btn.className = "filter-btn px-3 py-1 text-xs font-medium rounded-lg bg-sky-600 text-white transition-all";
+                } else {
+                    btn.className = "filter-btn px-3 py-1 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all";
+                }
+            });
+
+            renderTable();
+        });
+
+        // Trigger Delete Modal
+        tableBody.addEventListener('click', (e) => {
+            const deleteBtn = e.target.closest('.delete-btn');
+            if (!deleteBtn) return;
+
+            pendingDeleteId = deleteBtn.getAttribute('data-id');
+            deleteModal.classList.remove('hidden');
+        });
+
+        cancelDeleteBtn.addEventListener('click', () => {
+            pendingDeleteId = null;
+            deleteModal.classList.add('hidden');
+        });
+
+        // Execute Deletion
+        confirmDeleteBtn.addEventListener('click', async () => {
+            if (!pendingDeleteId || !currentUser) return;
+
+            confirmDeleteBtn.disabled = true;
+            confirmDeleteBtn.textContent = "Deleting...";
+
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'expenses', pendingDeleteId);
+                await deleteDoc(docRef);
+                showFormAlert("Expense deleted successfully.", "success");
+            } catch (err) {
+                console.error("Error deleting document:", err);
+                showFormAlert("Failed to delete record.", "error");
+            } finally {
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.textContent = "Delete Record";
+                pendingDeleteId = null;
+                deleteModal.classList.add('hidden');
+            }
+        });
+
+        // Initialize session on load
+        initializeAuthentication();
+    </script>
+</body>
+</html>
